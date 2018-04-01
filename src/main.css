@@ -1,0 +1,48 @@
+body {
+  background-color: #000;
+  color: #ddd;
+}
+
+.button {
+  padding: 4px;
+  border: 2px solid #ddd;
+
+  display: inline-block;
+  margin: 2px;
+}
+
+.warning {
+  margin: 20px;
+  padding: 5px;
+  border: 2px solid #f00;
+}
+
+table {
+  background-color: #666;
+}
+
+
+#cummunity = {
+  width: 400px;
+}
+
+#official = {
+  width: 400px;
+}
+
+
+td {
+  padding: 6px;
+}
+
+tr {
+  background-color: #000;
+}
+
+tr.server {
+  cursor: pointer;
+}
+
+tr.server:hover {
+  background-color: #009;
+}
