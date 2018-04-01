@@ -1,7 +1,7 @@
 {
   "name": "ohol-launcher",
   "productName": "ohol-launcher",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "TODO",
   "main": "src/index.js",
   "scripts": {
@@ -25,7 +25,8 @@
         ],
         "linux": [
           "deb",
-          "rpm"
+          "rpm",
+          "flatpak"
         ]
       },
       "electronPackagerConfig": {

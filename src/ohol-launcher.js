@@ -14,6 +14,30 @@ function show_setup_wizard() {
   mainWindow.loadURL(`file://${__dirname}/setup.html`)
 }
 
+function find_executable(path) {
+  for(let exe of ['/OneLifeApp', '/OneLife.exe']) {
+    if (fs.existsSync(path + exe)) {
+      console.log('Executable found', path + exe)
+      return path + exe
+    }
+  }
+  return null
+}
+
+function change_game_path(path) {
+  mainWindow.loadURL(`file://${__dirname}/setup_checking.html`)
+
+  if(find_executable(path) == null) {
+    // not a valid dir, go back to setup screen
+    // TODO show error message
+    show_setup_wizard()
+    return
+  }
+
+  store.set('install_path', path)
+  show_server_screen()
+}
+
 
 function show_server_screen() {
   mainWindow.loadURL(`file://${__dirname}/index.html`)
@@ -22,9 +46,10 @@ function show_server_screen() {
   })
 }
 
+
 function update_server_data() {
   request(SERVER_LIST, { json: true }, (err, res, body) => {
-    setTimeout(update_server_data, 500)
+    setTimeout(update_server_data, 5000)
     if (err) {
       return console.log(err)
     }
@@ -42,6 +67,7 @@ function update_config(config) {
   }
 }
 
+
 var oholProcess = null
 function start_game() {
   console.log('starting ohol')
@@ -53,8 +79,10 @@ function start_game() {
     'detached': true,
     'stdio': 'inherit'
   }
-  oholProcess = child_process.spawn(path + '/OneLifeApp', [], opt)
+  var exe = find_executable(path)
+  oholProcess = child_process.spawn(exe, [], opt)
 }
+
 
 function setup_ipc() {
   ipcMain.on('show-screen', (event, arg) => {
@@ -66,10 +94,7 @@ function setup_ipc() {
   })
 
   ipcMain.on('set-game-path', (event, arg) => {
-    // TODO check if folder actually contains the game
-    console.log('set game path', arg)
-    store.set('install_path', arg)
-    event.returnValue = true
+    change_game_path(arg)
   })
 
   ipcMain.on('update-game-config', (event, arg) => {
