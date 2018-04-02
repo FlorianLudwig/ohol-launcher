@@ -15,6 +15,7 @@ electron-forge start
 
 ## Roadmap
 
+ * setup ci
  * move to react
  * Auto-Update functionality
  * Windows Installer
