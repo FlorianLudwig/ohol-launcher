@@ -24,5 +24,5 @@ electron-forge start
  * Support for servers with password (save password per server)
  * Mac OS package
  * Flatpak package (Linux)
- * Include (translation installer)[https://github.com/HgGamer/One-Hour-One-Life-Translate]
+ * Include [translation installer](https://github.com/HgGamer/One-Hour-One-Life-Translate)
  * Modding
