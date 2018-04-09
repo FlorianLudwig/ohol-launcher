@@ -22,7 +22,9 @@ const createWindow = () => {
   mainWindow.setMenu(null)
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  if(process.env.DEBUG != undefined) {
+    mainWindow.webContents.openDevTools();
+  }
 
   // Emitted when the window is closed.
   mainWindow.on('closed', () => {
