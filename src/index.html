@@ -1,103 +1,104 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>One Hour One Life Launcher</title>
-  <link rel="stylesheet" type="text/css" href="main.css">
-</head>
+  <head>
+    <meta charset="utf-8">
+    <title>One Hour One Life Launcher</title>
+    <link rel="stylesheet" type="text/css" href="main.css">
+  </head>
 
-<body>
-<h1>One Hour One Life Launcher</h1>
+  <body>
+    <h1>One Hour One Life Launcher</h1>
 
-<div class="warning">
-  This is a PRE-RELEASE.  It does not check for updates!  Please do manually.
-</div>
+    <div class="warning">
+      This is a PRE-RELEASE.  It does not check for updates!  Please do manually.
+    </div>
 
+    <div style="width: 400px; float: right">
+      <h2>Community Servers</h2>
+      <table id="community">
+        <tr><td>Loading...</td></tr>
+      </table>
+    </div>
 
-<div style="width: 400px; float: right">
-<h2>Community Servers</h2>
-<table id="community">
-  <tr><td>Loading...</td></tr>
-</table>
-</div>
+    <h2>Official Servers</h2>
 
-<h2>Official Servers</h2>
-
-<table id="official">
-  <tr><td>Loading...</td></tr>
-</table>
-
+    <table id="official">
+      <tr><td>Loading...</td></tr>
+    </table>
 
 
-<script>
-  const {ipcRenderer} = require('electron')
-  const header = '<tr><th>Server</th><th>Version</th><th>Player</th></tr>'
 
-  function updateServerList(list, data) {
-    var html = ''
-    html += header
-    if(list == 'official') {
-      var player_counter = 0;
-      var max_player_count = 0;
-      for(let server of data) {
-        if(server.online && server.current_players != undefined) {
-          player_counter += server.current_players
-          max_player_count += server.max_players
+    <script>
+      const {ipcRenderer} = require('electron')
+      const header = '<tr><th>Server</th><th>Players</th></tr>'
+
+      function updateServerList(list, data) {
+
+        let html = ''
+        html += header
+        if (list == 'official') {
+          let player_counter = 0;
+          let max_player_count = 0;
+          for (let server of data) {
+            if (server.online && server.current_players != undefined) {
+              player_counter += server.current_players
+              max_player_count += server.max_players
+            }
+          }
+          html += '<tr onclick="joinOffical()" class="server">'
+          html += '<td>Auto select</td>'
+          html += `<td>${player_counter}/${max_player_count}</td></tr>`
         }
+
+
+        for (let server of data) {
+          var line = `<tr onclick="join('${server.address}', ${server.port})" class="server">`
+          line += `<td>${server.name}</td>`
+          // if (server.version) {
+          //     line += `<td>${server.version}</td>`
+          // } else {
+          //   line += `<td>unknown</td>`
+          // }
+
+
+          if (!server.online) {
+            line += '<td>offline</td>'
+          } else if(server.current_players != undefined) {
+            line += `<td>${server.current_players} / ${server.max_players}`
+          } else {
+            line += `<td>unknown</td>`
+          }
+
+          line += '</tr>'
+          html += line
+        }
+
+        document.getElementById(list).innerHTML = html
+        console.log('done')
       }
-      html += '<tr onclick="joinOffical()" class="server">'
-      html += '<td>Auto select</td><td></td>'
-      html += `<td>${player_counter}/${max_player_count}</td></tr>`
-    }
 
+      function joinOffical() {
+        var config = {'useCustomServer': '0'}
+        ipcRenderer.send('start-game', {config: config})
+      }
 
-    for(let server of data) {
-      var line = `<tr onclick="join('${server.address}', ${server.port})" class="server">`
-      line += `<td>${server.name}</td>`
-      if(server.version) {
-          line += `<td>${server.version}</td>`
-      } else {
-        line += `<td>unknown</td>`
+      function join(address, port) {
+        var config = {'customServerAddress': address, 'useCustomServer': '1'}
+        if(port != undefined) {
+          config['customServerPort'] = port
+        }
+        ipcRenderer.send('start-game', {config: config})
       }
 
 
-      if(!server.online) {
-        line += '<td>offline</td>'
-      } else if(server.current_players != undefined) {
-        line += `<td>${server.current_players} / ${server.max_players}`
-      } else {
-        line += `<td>unknown</td>`
-      }
 
-      line += '</tr>'
-      html += line
-    }
+      ipcRenderer.on('server-list', (event, message) => {
+        console.log('ipc', event, message)
+        updateServerList('official', message['official'])
+        updateServerList('community', message['community'])
+      })
 
-    document.getElementById(list).innerHTML = html
-    console.log('done')
-  }
+    </script>
 
-  function joinOffical() {
-    var config = {'useCustomServer': '0'}
-    ipcRenderer.send('start-game', {config: config})
-  }
-
-  function join(address, port) {
-    var config = {'customServerAddress': address, 'useCustomServer': '1'}
-    if(port != undefined) {
-      config['customServerPort'] = port
-    }
-    ipcRenderer.send('start-game', {config: config})
-  }
-
-
-
-  ipcRenderer.on('server-list', (event, message) => {
-    updateServerList('official', message['official'])
-    updateServerList('community', message['community'])
-  })
-
-</script>
-
-</body>
+  </body>
 </html>

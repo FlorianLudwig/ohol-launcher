@@ -1,21 +1,23 @@
-import './ohol'
-import {app, ipcMain} from 'electron'
-import * as child_process from 'child_process'
+import { app, ipcMain } from 'electron'
+import * as childProcess from 'child_process'
 import * as fs from 'fs'
-var request = require('request')
+
+import './ohol'
+
+const request = require('request')
 const Store = require('electron-store')
 
-const SERVER_LIST = 'http://onehour.world:8080/api/v1/servers'
+const SERVER_LIST = 'http://onehouronelife.com/reflector/server.php?action=report'
+
 const store = new Store()
-var mainWindow = null;
+let mainWindow = null;
 
-
-function show_setup_wizard() {
+function showSetupWizard() {
   mainWindow.loadURL(`file://${__dirname}/setup.html`)
 }
 
-function find_executable(path) {
-  for(let exe of ['/OneLifeApp', '/OneLife.exe']) {
+function findExecutable(path) {
+  for (let exe of ['/OneLifeApp', '/OneLife.exe']) {
     if (fs.existsSync(path + exe)) {
       console.log('Executable found', path + exe)
       return path + exe
@@ -24,99 +26,119 @@ function find_executable(path) {
   return null
 }
 
-function change_game_path(path) {
+function updateServerData() {
+  request(SERVER_LIST, { json: true }, (err, res, body) => {
+    let serverList = body.split('<br><br>');
+    serverList = serverList.splice(1, serverList.length - 4);
+    serverList = serverList.map((server) => {
+      const details = server.split(' ');
+      const ip = details[1];
+      const serverPort = details[3];
+      const currentPlayers = Number(details[5]);
+      const maxPlayers = Number(details[7]);
+
+      return {
+        name: ip,
+        address: ip,
+        port: serverPort,
+        online: true,
+        current_players: currentPlayers,
+        max_players: maxPlayers
+      }
+    })
+
+    serverList = {
+      official: serverList,
+      community: []
+    }
+
+    setTimeout(updateServerData, 5000)
+    if (err) {
+      return console.log(err)
+    }
+    mainWindow.webContents.send('server-list', serverList)
+  });
+}
+
+function showServerScreen() {
+  mainWindow.loadURL(`file://${__dirname}/index.html`)
+  mainWindow.webContents.on('did-finish-load', () => {
+    updateServerData()
+  })
+}
+
+function changeGamePath(path) {
   mainWindow.loadURL(`file://${__dirname}/setup_checking.html`)
 
-  if(find_executable(path) == null) {
+  if (findExecutable(path) == null) {
     // not a valid dir, go back to setup screen
     // TODO show error message
-    show_setup_wizard()
+    showSetupWizard()
     return
   }
 
   store.set('install_path', path)
-  show_server_screen()
+  showServerScreen()
 }
 
-
-function show_server_screen() {
-  mainWindow.loadURL(`file://${__dirname}/index.html`)
-  mainWindow.webContents.on('did-finish-load', () => {
-    update_server_data()
-  })
-}
-
-
-function update_server_data() {
-  request(SERVER_LIST, { json: true }, (err, res, body) => {
-    setTimeout(update_server_data, 5000)
-    if (err) {
-      return console.log(err)
-    }
-    mainWindow.webContents.send('server-list', body)
-  });
-}
-
-function update_config(config) {
-  var path = store.get('install_path')
-  for(var key in config) {
-    var value = config[key]
+function updateConfig(config) {
+  let path = store.get('install_path')
+  for (let key in config) {
+    let value = config[key]
     console.log('setting', key, 'to', value)
-      var cfg_path = `${path}/settings/${key}.ini`
-      fs.writeFileSync(cfg_path, value.toString());
+    let cfgPath = `${path}/settings/${key}.ini`
+    fs.writeFileSync(cfgPath, value.toString());
   }
 }
 
-
-var oholProcess = null
-function start_game() {
+let oholProcess = null
+function startGame() {
   console.log('starting ohol')
-  var path = store.get('install_path')
+  let path = store.get('install_path')
   console.log(path)
   // TODO handle already running process
-  var opt = {
-    'cwd': path,
-    'detached': true,
-    'stdio': 'inherit'
+  let opt = {
+    cwd: path,
+    detached: true,
+    stdio: 'inherit'
   }
-  var exe = find_executable(path)
-  oholProcess = child_process.spawn(exe, [], opt)
+  let exe = findExecutable(path)
+  oholProcess = childProcess.spawn(exe, [], opt)
 }
 
-
-function setup_ipc() {
+function SetupIpc() {
   ipcMain.on('show-screen', (event, arg) => {
-    if(arg == 'server') {
-      show_server_screen()
-    } else{
+    if (arg === 'server') {
+      showServerScreen()
+    } else {
       console.log('unkown screen', arg)
     }
   })
 
   ipcMain.on('set-game-path', (event, arg) => {
-    change_game_path(arg)
+    changeGamePath(arg)
   })
 
   ipcMain.on('update-game-config', (event, arg) => {
-    update_config(arg)
+    updateConfig(arg)
   })
 
   ipcMain.on('start-game', (event, arg) => {
-    if(arg.config) {
-      update_config(arg.config)
+    if (arg.config) {
+      updateConfig(arg.config)
     }
-    start_game()
+    startGame()
   })
 }
 
 export function main(window) {
   console.log('config location', app.getPath('userData'))
-  setup_ipc()
+  SetupIpc()
 
   mainWindow = window
-  if(store.get('install_path') == undefined) {
-    show_setup_wizard()
+  if (store.get('install_path') === undefined) {
+    showSetupWizard()
   } else {
-    show_server_screen()
+    showServerScreen()
   }
 }
