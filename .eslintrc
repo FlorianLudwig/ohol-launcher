@@ -5,6 +5,7 @@
     "import/no-extraneous-dependencies": 0,
     "import/no-unresolved": [2, { "ignore": ["electron"] }],
     "linebreak-style": 0,
-    "semi": 0
+    "semi": 0,
+    "comma-dangle": 0
   }
 }
